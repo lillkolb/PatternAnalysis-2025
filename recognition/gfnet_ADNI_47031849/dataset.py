@@ -9,18 +9,47 @@ from tqdm import tqdm # terminal progress bar this library lets us visualise the
 import cv2
 import os
 import numpy as np # Import numpy for image processing
+import random
 
 class ADNI_Dataset(Dataset):
     """
 
     """
 
-    def __init__(self, img_dir, split="train", transform=None, value=False, seed=1, splitratio=0.75, tqdm_disable=False): # change ratio if needed
+    def __init__(self, img_dir, transform=None, valid=False, seed=1, split_ratio=0.75, tqdm_disable=False): # change ratio if needed
         self.img_dir = img_dir
         self.ad = img_dir + '/AD'
         self.nc = img_dir + '/NC'
         self.processed_ad = img_dir + '/processed_AD'
         self.processed_nc = img_dir + '/processed_NC'
+        self.tqdm_disable = tqdm_disable
+
+        # run preprocess on raw images
+        self._preprocess_data()
+        self.ad_images = [os.path.join(self.processed_ad, img) for img in os.listdir(self.processed_ad)]
+        self.nc_images = [os.path.join(self.processed_nc, img) for img in os.listdir(self.processed_nc)]
+        self.all_images = self.ad_images + self.nc_images
+        self.all_labels = [1] * len(self.ad_images) + [0] * len(self.nc_images)
+
+        self.transform = transform
+        self.split = split
+        self.valid = valid
+        self.seed = seed
+        self.split_ratio = split_ratio
+
+        self._create_mask()
+
+    def _create_mask(self):
+        random.seed(self.seed)
+        if self.split_ratio == 1:
+            return [True] * len(self.all_images)
+        else:
+            # split the data
+            train_split = [random.random() < self.split_ratio for _ in range(len(self.all_images))]
+            # validation data is images not used in training
+            if self.valid:
+                return [not x for x in train_split]
+            return train_split
 
     def _preprocess_data(self):
         # check processed AD directory exists
@@ -90,5 +119,5 @@ class ADNI_Dataset(Dataset):
             return cropped_image
         else:
             # If no non-zero pixels are found, return the original image or handle as appropriate
-            print("Error! Empty image - preprocessing has not been applied")
+            print("Error! Empty image - cropping has not been applied")
             return image

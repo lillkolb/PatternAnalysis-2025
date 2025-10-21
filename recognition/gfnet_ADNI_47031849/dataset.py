@@ -32,12 +32,12 @@ class ADNI_Dataset(Dataset):
         self.all_labels = [1] * len(self.ad_images) + [0] * len(self.nc_images)
 
         self.transform = transform
-        self.split = split
         self.valid = valid
         self.seed = seed
         self.split_ratio = split_ratio
 
-        self._create_mask()
+        self.mask = self._create_mask()
+
 
     def _create_mask(self):
         random.seed(self.seed)
@@ -56,17 +56,18 @@ class ADNI_Dataset(Dataset):
         if (not os.path.exists(self.processed_ad)):
             print("Preprocessing AD images")
             os.mkdir(self.processed_ad)
-            for img in tqdm(os.listdir(self.ad), disable=tqdm_disable):
+            for img in tqdm(os.listdir(self.ad), disable=self.tqdm_disable):
                 if img.lower().endswith(('.png', '.jpg', '.jpeg')):
                     img_path = os.path.join(self.ad, img)
                     new_path = os.path.join(self.processed_ad, img)
                     self._process_img(img_path, new_path)
 
+
         # check processed NC directory exists
         if (not os.path.exists(self.processed_nc)):
             print("Preprocessing NC images")
             os.mkdir(self.processed_nc)
-            for img in tqdm(os.listdir(self.nc), disable=tqdm_disable):
+            for img in tqdm(os.listdir(self.nc), disable=self.tqdm_disable):
                 if img.lower().endswith(('.png', '.jpg', '.jpeg')):
                     img_path = os.path.join(self.nc, img)
                     new_path = os.path.join(self.processed_nc, img)
@@ -80,7 +81,7 @@ class ADNI_Dataset(Dataset):
         # Add the cropping logic here
         cropped_image = self._crop_brain_region(image)
 
-        # we need to make sure all of the images are of the same pixel size. 
+        # we need to make sure all of the images are of the same pixel size.
         height, width = cropped_image.shape
 
         # resize the largest dimension 210 (since none of the images exceed this in terms of valid region)
@@ -103,6 +104,7 @@ class ADNI_Dataset(Dataset):
         # Save the processed image
         cv2.imwrite(processed_filepath, pad_img)
 
+
     def _crop_brain_region(self, image):
         # threshold the image using Otsu's threshold method
         _, binary_mask = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -121,3 +123,30 @@ class ADNI_Dataset(Dataset):
             # If no non-zero pixels are found, return the original image or handle as appropriate
             print("Error! Empty image - cropping has not been applied")
             return image
+
+    def __len__(self):
+        return sum(self.mask)
+
+    def __getitem__(self, idx):
+        # Find the actual index in the full list based on the mask
+        masked_idx = -1
+        count = 0
+        for i, include in enumerate(self.mask):
+            if include:
+                if count == idx:
+                    masked_idx = i
+                    break
+                count += 1
+
+        if masked_idx == -1:
+            raise IndexError("Index out of bounds for masked dataset")
+
+        img_path = self.all_images[masked_idx]
+        label = self.all_labels[masked_idx]
+
+        image = Image.open(img_path).convert('RGB') # Ensure image is in RGB format
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, label

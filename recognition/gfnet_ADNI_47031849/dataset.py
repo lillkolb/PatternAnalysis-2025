@@ -10,12 +10,6 @@ import cv2
 import os
 import numpy as np # Import numpy for image processing
 
-from torch.utils.data import Dataset, DataLoader
-from PIL import Image
-from tqdm import tqdm # terminal progress bar this library lets us visualise the progress of an iterable
-import cv2
-import numpy as np # Import numpy for image processing
-
 class ADNI_Dataset(Dataset):
     """
 

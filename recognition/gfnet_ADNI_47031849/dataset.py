@@ -10,6 +10,12 @@ import cv2
 import os
 import numpy as np # Import numpy for image processing
 
+from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+from tqdm import tqdm # terminal progress bar this library lets us visualise the progress of an iterable
+import cv2
+import numpy as np # Import numpy for image processing
+
 class ADNI_Dataset(Dataset):
     """
 
@@ -33,7 +39,7 @@ class ADNI_Dataset(Dataset):
                     new_path = os.path.join(self.processed_ad, img)
                     self._process_img(img_path, new_path)
 
-        # check processed AD directory exists
+        # check processed NC directory exists
         if (not os.path.exists(self.processed_nc)):
             print("Preprocessing NC images")
             os.mkdir(self.processed_nc)
@@ -51,8 +57,28 @@ class ADNI_Dataset(Dataset):
         # Add the cropping logic here
         cropped_image = self._crop_brain_region(image)
 
+        # we need to make sure all of the images are of the same pixel size. 
+        height, width = cropped_image.shape
+
+        # resize the largest dimension 210 (since none of the images exceed this in terms of valid region)
+        scaling = 210 / max(height, width)
+        new_height = int(height * scaling)
+        new_width = int(width * scaling)
+
+        # resize image with lancoz interpolation
+        cropped_image = cv2.resize(cropped_image, (new_width, new_height), interpolation=cv2.INTER_LANCZOS4)
+
+        # Find padding values for 210x210 image
+        pad_top = (210 - new_height) // 2
+        pad_bottom = 210 - new_height - pad_top
+        pad_left = (210 - new_width) // 2
+        pad_right = 210 - new_width - pad_left
+
+        # Add padding to the image
+        pad_img = cv2.copyMakeBorder(cropped_image, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=0)
+
         # Save the processed image
-        cv2.imwrite(processed_filepath, cropped_image)
+        cv2.imwrite(processed_filepath, pad_img)
 
     def _crop_brain_region(self, image):
         # threshold the image using Otsu's threshold method

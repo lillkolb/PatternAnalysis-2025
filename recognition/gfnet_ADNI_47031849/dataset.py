@@ -10,6 +10,7 @@ import cv2
 import os
 import numpy as np # Import numpy for image processing
 import random
+from collections import defaultdict # essentially a dict that does not raise a KeyError when accessing a nonexistent key
 
 class ADNIDatasetTrain(Dataset):
     """
@@ -157,8 +158,13 @@ class ADNIDatasetTest(Dataset):
         self.processed_ad = img_dir + '/processed_AD'
         self.processed_nc = img_dir + '/processed_NC'
         self.tqdm_disable = tqdm_disable
+        self.transform = transform
 
         self._preprocess_data()
+
+        self.img_groups = []
+        self.img_groups.extend(self._group_images(self.processed_ad, 1))
+        self.img_groups.extend(self._group_images(self.processed_nc, 0))
 
     def _preprocess_data(self):
         # check processed AD directory exists
@@ -229,3 +235,63 @@ class ADNIDatasetTest(Dataset):
             # If no non-zero pixels are found, return the original image or handle as appropriate
             print("Error! Empty image - cropping has not been applied")
             return image
+
+    def _group_images(self, dir, label):
+        """
+        Test images are given in groups, where the first number corresponds to 
+        a given brain. Group the images by their number, there should be 20 images per group
+        """
+        img_groups = []
+        unsorted_groups = defaultdict(list)
+
+        for filename in os.listdir(dir):
+            if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                # Extract the group number from the filename
+                group_number = filename.split('_')[0] # keep as str
+                unsorted_groups[group_number].append(filename)
+
+        # Sort the groups based on the group number
+        for group_number, filnames in unsorted_groups.items():
+            # sort filenames based on second number of filename
+            sorted_group = sorted(filnames, key=lambda x: int(x.split('_')[1].split('.')[0]))
+            
+            # check group size is 20
+            if len(sorted_group) != 20:
+                raise Exception(f"Group {group_number} does not contain excalty 20 images")
+            
+            img_groups.append({
+                "group_number" : group_number,
+                "filenames" : sorted_group,
+                "label" : label
+            })
+
+        return img_groups
+
+    def __len__(self):
+        return len(self.img_groups)
+
+    def __getitem__(self, idx):
+        group = self.img_groups[idx]
+        group_num = group["group_number"]
+        filenames = group["filenames"]
+        label = group["label"]
+
+        images_stacked = []
+
+        image_dir = self.processed_ad if label == 1 else self.processed_nc
+
+        for filename in filenames:
+            img_path = os.path.join(image_dir, filename)
+
+            # open image and convert to 8 bit grayscale
+            image = Image.open(img_path).convert('L')
+
+            if self.transform:
+                image = self.transform(image)
+
+            images_stacked.append(image)
+        
+        # use numpy to stack tensors since we have a list
+        # images stacked to form (20, 1, 210, 210) shape
+        images_stacked = np.stack(images_stacked, axis = 0)
+        return torch.tensor(images_stacked, dtype=torch.float32), torch.tensor(label).float()

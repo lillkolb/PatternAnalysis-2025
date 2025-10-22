@@ -41,6 +41,9 @@ class PatchEmbedding(nn.Module):
         return x
 
 class GlobalFilter(nn.Module):
+    """
+    global mixing in the spatial dimension
+    """
     def __init__(self, dim, h=14, w=8):
         super().__init__()
         self.cmplx_weight = nn.Parameter(torch.randn(h, w, dim, 2, dtype=torch.float32)*0.02)
@@ -64,4 +67,30 @@ class GlobalFilter(nn.Module):
 
         x = x.reshape(B, N, C)
 
+        return x
+
+class MultiLayerPerceptron(nn.Module):
+    """
+    Per-token depth-wise feature transformation
+
+    MLP provides non-linearity to the global filter layer (with GELU) as well as 
+    channel interaction 
+
+    In the GFNet, the MLP consits of linear projection, activation function (GELU) and dropout layer
+    """
+    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
+        super().__init__()
+        out_features = out_features or in_features
+        hidden_features = hidden_features or in_features
+        self.linear_layer_1 = nn.Linear(in_features, hidden_features)   # first linear projection
+        self.activation_layer = act_layer()                             # activation layer
+        self.linear_layer_2 = nn.Linear(hidden_features, out_features)  # second linear projection
+        self.dropout_layer = nn.Dropout(drop)                           # dropout layer
+
+    def forward(self, x):
+        x = self.linear_layer_1(x)      # apply first linear projection
+        x = self.activation_layer(x)    # apply activation layer
+        x = self.dropout_layer(x)       # apply dropout layer
+        x = self.linear_layer_2(x)      # apply second linear projection
+        x = self.dropout_layer(x)       # apply dropout layer again
         return x

@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.fft
 from timm.layers import DropPath, to_2tuple, trunc_normal_
+import math
 
 # patch embedding
 # layer norm
@@ -46,4 +47,21 @@ class GlobalFilter(nn.Module):
         self.w = w
         self.h = h
 
-        
+    def forward(self, x, spatial_size=None):
+        B, N, C = x.shape
+        if spatial_size is None:
+            H = W = int(math.sqrt(N))
+        else:
+            H, W = spatial_size
+
+        x = x.view(B, H, W, C)
+        x = x.to(torch.float32)
+
+        x = torch.fft.rfft2(x, dim=(1, 2), norm='ortho')
+        weight = torch.view_as_complex(self.cmplx_weight)
+        x = x * weight
+        x = torch.fft.irfft2(x, s=(H, W), dim=(1, 2), norm='ortho')
+
+        x = x.reshape(B, N, C)
+
+        return x

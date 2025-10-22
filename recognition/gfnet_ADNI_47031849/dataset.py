@@ -11,7 +11,7 @@ import os
 import numpy as np # Import numpy for image processing
 import random
 
-class ADNI_Dataset(Dataset):
+class ADNIDatasetTrain(Dataset):
     """
 
     """
@@ -38,7 +38,6 @@ class ADNI_Dataset(Dataset):
 
         self.mask = self._create_mask()
 
-
     def _create_mask(self):
         random.seed(self.seed)
         if self.split_ratio == 1:
@@ -62,7 +61,6 @@ class ADNI_Dataset(Dataset):
                     new_path = os.path.join(self.processed_ad, img)
                     self._process_img(img_path, new_path)
 
-
         # check processed NC directory exists
         if (not os.path.exists(self.processed_nc)):
             print("Preprocessing NC images")
@@ -72,7 +70,6 @@ class ADNI_Dataset(Dataset):
                     img_path = os.path.join(self.nc, img)
                     new_path = os.path.join(self.processed_nc, img)
                     self._process_img(img_path, new_path)
-
 
     def _process_img(self, raw_filepath, processed_filepath):
         # load in grayscale (since images are grayscale)
@@ -103,7 +100,6 @@ class ADNI_Dataset(Dataset):
 
         # Save the processed image
         cv2.imwrite(processed_filepath, pad_img)
-
 
     def _crop_brain_region(self, image):
         # threshold the image using Otsu's threshold method
@@ -150,3 +146,86 @@ class ADNI_Dataset(Dataset):
             image = self.transform(image)
 
         return image, label
+
+class ADNIDatasetTest(Dataset):
+    """
+    """
+    def __init__(self, img_dir, transform=None, tqdm_disable=False): # change ratio if needed
+        self.img_dir = img_dir
+        self.ad = img_dir + '/AD'
+        self.nc = img_dir + '/NC'
+        self.processed_ad = img_dir + '/processed_AD'
+        self.processed_nc = img_dir + '/processed_NC'
+        self.tqdm_disable = tqdm_disable
+
+        self._preprocess_data()
+
+    def _preprocess_data(self):
+        # check processed AD directory exists
+        if (not os.path.exists(self.processed_ad)):
+            print("Preprocessing AD images")
+            os.mkdir(self.processed_ad)
+            for img in tqdm(os.listdir(self.ad), disable=self.tqdm_disable):
+                if img.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    img_path = os.path.join(self.ad, img)
+                    new_path = os.path.join(self.processed_ad, img)
+                    self._process_img(img_path, new_path)
+
+        # check processed NC directory exists
+        if (not os.path.exists(self.processed_nc)):
+            print("Preprocessing NC images")
+            os.mkdir(self.processed_nc)
+            for img in tqdm(os.listdir(self.nc), disable=self.tqdm_disable):
+                if img.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    img_path = os.path.join(self.nc, img)
+                    new_path = os.path.join(self.processed_nc, img)
+                    self._process_img(img_path, new_path)
+
+    def _process_img(self, raw_filepath, processed_filepath):
+        # load in grayscale (since images are grayscale)
+        image = cv2.imread(raw_filepath, cv2.IMREAD_GRAYSCALE)
+
+        # Add the cropping logic here
+        cropped_image = self._crop_brain_region(image)
+
+        # we need to make sure all of the images are of the same pixel size.
+        height, width = cropped_image.shape
+
+        # resize the largest dimension 210 (since none of the images exceed this in terms of valid region)
+        scaling = 210 / max(height, width)
+        new_height = int(height * scaling)
+        new_width = int(width * scaling)
+
+        # resize image with lancoz interpolation
+        cropped_image = cv2.resize(cropped_image, (new_width, new_height), interpolation=cv2.INTER_LANCZOS4)
+
+        # Find padding values for 210x210 image
+        pad_top = (210 - new_height) // 2
+        pad_bottom = 210 - new_height - pad_top
+        pad_left = (210 - new_width) // 2
+        pad_right = 210 - new_width - pad_left
+
+        # Add padding to the image
+        pad_img = cv2.copyMakeBorder(cropped_image, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=0)
+
+        # Save the processed image
+        cv2.imwrite(processed_filepath, pad_img)
+
+    def _crop_brain_region(self, image):
+        # threshold the image using Otsu's threshold method
+        _, binary_mask = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        # Find the coordinates of non-zero pixels
+        coords = cv2.findNonZero(binary_mask)
+
+        if coords is not None:
+            # Get the bounding box of the non-zero pixels
+            x, y, w, h = cv2.boundingRect(coords)
+
+            # Crop the image using the bounding box
+            cropped_image = image[y:y+h, x:x+w]
+            return cropped_image
+        else:
+            # If no non-zero pixels are found, return the original image or handle as appropriate
+            print("Error! Empty image - cropping has not been applied")
+            return image

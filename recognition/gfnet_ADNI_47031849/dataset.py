@@ -14,10 +14,21 @@ from collections import defaultdict # essentially a dict that does not raise a K
 
 class ADNIDatasetTrain(Dataset):
     """
-
+    ADNI Dataset for training data
     """
-
     def __init__(self, img_dir, transform=None, valid=False, seed=1, split_ratio=0.75, tqdm_disable=False): # change ratio if needed
+        """
+        Initialise dataset
+
+        :Args:
+                img_dir (str): Path to training directory containing images
+                transform (callable, optional): Optional transform to be applied on a sample.
+                valid (bool): True if validation set, False if training set
+                seed (int): Seed for consistentency in random number generators
+                split_ratio (float): how much of the training dataset we split to train on
+                tqdm_disable (bool): Whether to disable the tqdm progress bar
+
+        """
         self.img_dir = img_dir
         self.ad = img_dir + '/AD'
         self.nc = img_dir + '/NC'
@@ -40,6 +51,15 @@ class ADNIDatasetTrain(Dataset):
         self.mask = self._create_mask()
 
     def _create_mask(self):
+        """
+        Creates a mask for the dataset. Splits the training dataset into training and validation sets.
+
+        :Args: None
+        
+        :Returns: List[bool]
+        
+        :Raises: None
+        """
         random.seed(self.seed)
         if self.split_ratio == 1:
             return [True] * len(self.all_images)
@@ -52,6 +72,16 @@ class ADNIDatasetTrain(Dataset):
             return train_split
 
     def _preprocess_data(self):
+        """
+        Preprocess images in AD and NC directories
+        These will be stored in processed_AD and processed_NC respectively
+        
+        :Args: None
+        
+        :Returns: None
+        
+        :Raises: None
+        """
         # check processed AD directory exists
         if (not os.path.exists(self.processed_ad)):
             print("Preprocessing AD images")
@@ -73,6 +103,17 @@ class ADNIDatasetTrain(Dataset):
                     self._process_img(img_path, new_path)
 
     def _process_img(self, raw_filepath, processed_filepath):
+        """
+        Process a single image. Image is cropped, resized, padded and saved.
+
+        :Args:
+                raw_filepath (str): Path to the raw image file
+                processed_filepath (str): Path to save the processed image
+        
+        :Returns: None
+        
+        :Raises: None
+        """
         # load in grayscale (since images are grayscale)
         image = cv2.imread(raw_filepath, cv2.IMREAD_GRAYSCALE)
 
@@ -103,6 +144,19 @@ class ADNIDatasetTrain(Dataset):
         cv2.imwrite(processed_filepath, pad_img)
 
     def _crop_brain_region(self, image):
+        """
+        Seperate the brain region from the background and crop the image based
+        on the bounding box of the brain region. 
+
+        :Args:
+                image (np.array): image to be cropped
+        
+        :Returns: 
+                np.array: cropped image
+        
+        :Raises: None
+        """
+
         # threshold the image using Otsu's threshold method
         _, binary_mask = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
@@ -122,9 +176,30 @@ class ADNIDatasetTrain(Dataset):
             return image
 
     def __len__(self):
+        """
+        Get length of dataset
+
+        :Args: None
+        
+        :Returns: 
+                int: dataset length
+        
+        :Raises: None
+        """
         return sum(self.mask)
 
     def __getitem__(self, idx):
+        """
+        Get image from dataset
+
+        :Args: 
+                idx (int): index of image in dataset
+        
+        :Returns: 
+                tuple(np.array, int): image, label
+        
+        :Raises: IndexError
+        """
         # Find the actual index in the full list based on the mask
         masked_idx = -1
         count = 0
@@ -150,8 +225,18 @@ class ADNIDatasetTrain(Dataset):
 
 class ADNIDatasetTest(Dataset):
     """
+    ADNI Dataset for testing data
     """
-    def __init__(self, img_dir, transform=None, tqdm_disable=False): # change ratio if needed
+    def __init__(self, img_dir, transform=None, tqdm_disable=False):
+        """
+        Initialise dataset
+
+        :Args:
+                img_dir (str): Path to training directory containing images
+                transform (callable, optional): Optional transform to be applied on a sample.
+                tqdm_disable (bool): Whether to disable the tqdm progress bar
+
+        """
         self.img_dir = img_dir
         self.ad = img_dir + '/AD'
         self.nc = img_dir + '/NC'
@@ -167,6 +252,16 @@ class ADNIDatasetTest(Dataset):
         self.img_groups.extend(self._group_images(self.processed_nc, 0))
 
     def _preprocess_data(self):
+        """
+        Preprocess images in AD and NC directories
+        These will be stored in processed_AD and processed_NC respectively
+        
+        :Args: None
+        
+        :Returns: None
+        
+        :Raises: None
+        """
         # check processed AD directory exists
         if (not os.path.exists(self.processed_ad)):
             print("Preprocessing AD images")
@@ -188,6 +283,17 @@ class ADNIDatasetTest(Dataset):
                     self._process_img(img_path, new_path)
 
     def _process_img(self, raw_filepath, processed_filepath):
+        """
+        Process a single image. Image is cropped, resized, padded and saved.
+
+        :Args:
+                raw_filepath (str): Path to the raw image file
+                processed_filepath (str): Path to save the processed image
+        
+        :Returns: None
+        
+        :Raises: None
+        """
         # load in grayscale (since images are grayscale)
         image = cv2.imread(raw_filepath, cv2.IMREAD_GRAYSCALE)
 
@@ -218,6 +324,18 @@ class ADNIDatasetTest(Dataset):
         cv2.imwrite(processed_filepath, pad_img)
 
     def _crop_brain_region(self, image):
+        """
+        Seperate the brain region from the background and crop the image based
+        on the bounding box of the brain region. 
+
+        :Args:
+                image (np.array): image to be cropped
+        
+        :Returns: 
+                np.array: cropped image
+        
+        :Raises: None
+        """
         # threshold the image using Otsu's threshold method
         _, binary_mask = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
@@ -240,6 +358,15 @@ class ADNIDatasetTest(Dataset):
         """
         Test images are given in groups, where the first number corresponds to 
         a given brain. Group the images by their number, there should be 20 images per group
+
+        :Args:
+                dir (str): processed directory path
+                label (int): 1 for AD, 0 for NC
+        
+        :Returns: 
+                List[dict]: a list of dictionaries containing the group number, filenames and label
+        
+        :Raises: None
         """
         img_groups = []
         unsorted_groups = defaultdict(list)
@@ -268,16 +395,40 @@ class ADNIDatasetTest(Dataset):
         return img_groups
 
     def __len__(self):
+        """
+        Get length of dataset
+
+        :Args: None
+        
+        :Returns: 
+                int: dataset length
+        
+        :Raises: None
+        """
         return len(self.img_groups)
 
     def __getitem__(self, idx):
+        """
+        Get image stack from dataset
+
+        :Args: 
+                idx (int): index of image in dataset
+        
+        :Returns: 
+                tuple(torch.tensor, torch.tensor): image stack, label
+        
+        :Raises: IndexError
+        """
+        # grab image and labels
         group = self.img_groups[idx]
         group_num = group["group_number"]
         filenames = group["filenames"]
         label = group["label"]
 
+        # initialise an empty image stack
         images_stacked = []
 
+        # get target directory based on label
         image_dir = self.processed_ad if label == 1 else self.processed_nc
 
         for filename in filenames:
@@ -286,9 +437,11 @@ class ADNIDatasetTest(Dataset):
             # open image and convert to 8 bit grayscale
             image = Image.open(img_path).convert('L')
 
+            # apply transform
             if self.transform:
                 image = self.transform(image)
 
+            # add image to image stack
             images_stacked.append(image)
         
         # use numpy to stack tensors since we have a list

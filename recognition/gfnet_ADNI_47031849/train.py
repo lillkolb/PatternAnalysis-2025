@@ -10,6 +10,7 @@ import numpy as np
 import random
 from torchvision import transforms
 from torch.utils.data import DataLoader
+import torch.optim as optim
 
 MEAN = 0.11486841564676334
 STD = 0.21826585544938487
@@ -51,6 +52,69 @@ def get_transforms(train):
             transforms.Normalize(mean=[MEAN], std=[STD])
         ])
     return data_transforms
+
+# https://docs.pytorch.org/tutorials/beginner/introyt/trainingyt.html
+# train 1 epoch function
+def train_one_epoch(epoch, model, train_loader, criterion, optimizer, scheduler, device="cuda", visualise=False):
+    """
+    
+    """
+    model.train()
+    total_train_loss = 0
+    pred_correct = 0
+    batch_total = 0
+
+    # i -> batch number, images -> img list for batch, labels -> labels list for batch
+    for images, labels in tqdm(train_loader, disable=not visualise): # for each batch of images
+        # send the batch to the device
+        images = images.to(device)
+        labels = labels.to(device)
+
+        outputs = model(images)             # 1. forward pass
+        loss = criterion(outputs, labels)   # 2. loss calculation
+        optimizer.zero_grad()               # 3. zero the parameter gradients before backwards pass
+        loss.backward()                     # 4. backwards pass
+        optimizer.step()                    # 5. optimiser
+
+        # update params
+        total_train_loss += loss.item()     # add current loss to total loss
+        predicted = (outputs >= 0).float()  # converting predictions to floats (1.0 or 0.0)
+        batch_total += labels.size(0)       # add current batch size
+        pred_correct += (predicted == labels).sum().item()
+                                            # add the total correct predictions in current batch                                            
+    scheduler.step()                        # 6. scheduler
+
+    avg_loss = total_train_loss / len(train_loader)     # average loss throughout epoch
+    train_accuracy = pred_correct / total               # model accuracy of epoch
+
+    return avg_loss, train_accuracy
+
+# evaluate model using validation set
+def validate_model(model, valid_loader, criterion, device="cuda", visualise=False):
+    model.eval()
+    total_valid_loss = 0
+    pred_correct = 0
+    batch_total = 0
+    with torch.no_grad(model, train_loader, criterion):
+        for images, labels in tqdm(train_loader, disable=not visualise):
+            # send the batch to the device
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs = model(images)             # 1. forward pass
+            loss = criterion(outputs, labels)   # 2. loss calculation
+
+            # update params
+            total_valid_loss += loss.item()     # add current loss to total loss
+            predicted = (outputs >= 0).float()  # converting predictions to floats (1.0 or 0.0)
+            batch_total += labels.size(0)       # add current batch size
+            pred_correct += (predicted == labels).sum().item()
+                                            # add the total correct predictions in current batch
+
+    avg_loss = total_valid_loss / len(valid_loader)     # average loss
+    valid_accuracy = pred_correct / total               # model accuracy
+
+    return avg_loss, valid_accuracy
 
 set_seed(test_seed)
 

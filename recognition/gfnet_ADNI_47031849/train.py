@@ -15,6 +15,11 @@ import torch.optim as optim
 MEAN = 0.11486841564676334
 STD = 0.21826585544938487
 
+# MAX_EPOCHS = 60
+MAX_EPOCHS = 2
+LEARNING_RATE = 1e-3
+WEIGHT_DECAY = 5e-4
+
 # Params ==========
 disable_tqdm = False
 test_seed = 0
@@ -68,9 +73,12 @@ def train_one_epoch(epoch, model, train_loader, criterion, optimizer, scheduler,
     for images, labels in tqdm(train_loader, disable=not visualise): # for each batch of images
         # send the batch to the device
         images = images.to(device)
-        labels = labels.to(device)
+        labels = labels.float().to(device)
+
+        # optimizer.zero_grad()
 
         outputs = model(images)             # 1. forward pass
+        outputs = outputs.squeeze(1)        # squeeze outputs to match [64] shape of labels
         loss = criterion(outputs, labels)   # 2. loss calculation
         optimizer.zero_grad()               # 3. zero the parameter gradients before backwards pass
         loss.backward()                     # 4. backwards pass
@@ -85,7 +93,7 @@ def train_one_epoch(epoch, model, train_loader, criterion, optimizer, scheduler,
     scheduler.step()                        # 6. scheduler
 
     avg_loss = total_train_loss / len(train_loader)     # average loss throughout epoch
-    train_accuracy = pred_correct / total               # model accuracy of epoch
+    train_accuracy = pred_correct / batch_total               # model accuracy of epoch
 
     return avg_loss, train_accuracy
 
@@ -95,13 +103,14 @@ def validate_model(model, valid_loader, criterion, device="cuda", visualise=Fals
     total_valid_loss = 0
     pred_correct = 0
     batch_total = 0
-    with torch.no_grad(model, train_loader, criterion):
-        for images, labels in tqdm(train_loader, disable=not visualise):
+    with torch.no_grad():
+        for images, labels in tqdm(valid_loader, disable=not visualise):
             # send the batch to the device
             images = images.to(device)
-            labels = labels.to(device)
+            labels = labels.float().to(device)
 
             outputs = model(images)             # 1. forward pass
+            outputs = outputs.squeeze(1)        # squeeze outputs to match [64] shape of labels
             loss = criterion(outputs, labels)   # 2. loss calculation
 
             # update params
@@ -112,7 +121,7 @@ def validate_model(model, valid_loader, criterion, device="cuda", visualise=Fals
                                             # add the total correct predictions in current batch
 
     avg_loss = total_valid_loss / len(valid_loader)     # average loss
-    valid_accuracy = pred_correct / total               # model accuracy
+    valid_accuracy = pred_correct / batch_total               # model accuracy
 
     return avg_loss, valid_accuracy
 
@@ -124,3 +133,28 @@ test_transforms = get_transforms(False)
 train_dataset = ADNIDatasetTrain(train_path, valid = False, transform=train_transforms, tqdm_disable=disable_tqdm)
 valid_dataset = ADNIDatasetTrain(train_path, valid = True, transform=train_transforms, tqdm_disable=disable_tqdm)
 test_dataset = ADNIDatasetTest(test_path, transform=test_transforms, tqdm_disable=disable_tqdm)
+
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=6)
+valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False, num_workers=6)
+
+for epoch in range(MAX_EPOCHS):
+
+    model = GFNet(
+        img_size=210, 
+        patch_size=14, 
+        in_chans=1, 
+        num_classes=1, 
+        embed_dim=384, 
+        depth=12,
+        mlp_ratio=4., 
+        norm_layer=partial(nn.LayerNorm, eps=1e-6)
+    ).to(device)
+
+    criterion = nn.BCEWithLogitsLoss()
+    optimiser = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY, momentum=0.9)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimiser, step_size=10, gamma=0.1) #added this
+
+    train_loss, train_accuracy = train_one_epoch(epoch, model, train_loader, criterion, optimiser, scheduler, device=device, visualise=True)
+    valid_loss, valid_accuracy = validate_model(model, valid_loader, criterion, device=device, visualise=True)
+
+    print(f"Epoch: {epoch}, Train Loss: {train_loss}, Train Accuracy: {train_accuracy}, Valid Loss: {valid_loss}, Valid Accuracy: {valid_accuracy}")

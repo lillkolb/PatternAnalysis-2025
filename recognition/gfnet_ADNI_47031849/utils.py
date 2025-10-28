@@ -2,8 +2,15 @@
 From Task Sheet:
 "You may create other helper files such as “utils.py” to better organise your project"
 """
-
 import matplotlib.pyplot as plt
+import os
+import pickle
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score
+import matplotlib.pyplot as plt
+import numpy as np
+
+saving_filepath = './drive/MyDrive/Colab_Notebooks/Final_proj_stored'
+
 def plot_data():
     # load accuracy and loss data
     with open(os.path.join(saving_filepath, 'train_loss_data.pkl'), 'rb') as f:
@@ -39,3 +46,14 @@ def plot_data():
     plt.grid()
     plt.show()
 
+def analyse_data(actual_values, predictions_list):
+    cm = confusion_matrix(actual_values, predictions_list)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['AD', 'NC'])
+    disp.plot()
+    plt.show()
+
+    predictions_list = np.array(predictions_list)
+    actual_values = np.array(actual_values)
+
+    testing_accuracy = accuracy_score(actual_values, predictions_list)
+    print("Testing accuracy: ", testing_accuracy)

@@ -4,7 +4,6 @@ From Task Sheet:
 should be imported from “modules.py” and the data loader should be imported from “dataset.py”. Make
 sure to plot the losses and metrics during training"
 """
-
 import torch
 import numpy as np
 import random
@@ -14,18 +13,18 @@ import torch.optim as optim
 import copy
 import pickle
 import os
+import tqdm
 
 MEAN = 0.11486841564676334
 STD = 0.21826585544938487
 
-# MAX_EPOCHS = 60
-MAX_EPOCHS = 2
+MAX_EPOCHS = 75
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 5e-4
 
 # Params ==========
 disable_tqdm = False
-test_seed = 0
+test_seed = 10
 train_path = './drive/MyDrive/Colab_Notebooks/AD_NC/train'
 test_path = './drive/MyDrive/Colab_Notebooks/AD_NC/test'
 
@@ -37,9 +36,12 @@ def set_seed(seed: int):
     Sets the seed of the random elements of the code in order to maintain consistency between trainings
     """
     torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed) # Use this for CUDA
     np.random.seed(seed)
     random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 # https://apxml.com/courses/pytorch-for-tensorflow-developers/chapter-3-pytorch-data-loading-for-tf-users/data-augmentation-pytorch-torchvision
 # apply geometric transforms before colour
@@ -162,7 +164,7 @@ valid_loss_data = []
 valid_accuracy_data = []
 top_valid_acc = 0
 early_stop_count = 0
-EARLY_STOP_VAL = 10
+EARLY_STOP_VAL = 12
 
 for epoch in range(MAX_EPOCHS):
     

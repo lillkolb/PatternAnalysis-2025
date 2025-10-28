@@ -11,6 +11,9 @@ import random
 from torchvision import transforms
 from torch.utils.data import DataLoader
 import torch.optim as optim
+import copy
+import pickle
+import os
 
 MEAN = 0.11486841564676334
 STD = 0.21826585544938487
@@ -137,24 +140,67 @@ test_dataset = ADNIDatasetTest(test_path, transform=test_transforms, tqdm_disabl
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=6)
 valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False, num_workers=6)
 
+criterion = nn.BCEWithLogitsLoss()
+optimiser = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimiser, T_max=20, eta_min=1e-6)
+
+model = GFNet(
+    img_size=210, 
+    patch_size=14, 
+    in_chans=1, 
+    num_classes=1, 
+    embed_dim=384, 
+    depth=12,
+    mlp_ratio=4., 
+    norm_layer=partial(nn.LayerNorm, eps=1e-6)
+).to(device)
+
+saving_filepath = './drive/MyDrive/Colab_Notebooks/Final_proj_stored'
+train_loss_data = []
+train_accuracy_data = []
+valid_loss_data = []
+valid_accuracy_data = []
+top_valid_acc = 0
+early_stop_count = 0
+EARLY_STOP_VAL = 10
+
 for epoch in range(MAX_EPOCHS):
-
-    model = GFNet(
-        img_size=210, 
-        patch_size=14, 
-        in_chans=1, 
-        num_classes=1, 
-        embed_dim=384, 
-        depth=12,
-        mlp_ratio=4., 
-        norm_layer=partial(nn.LayerNorm, eps=1e-6)
-    ).to(device)
-
-    criterion = nn.BCEWithLogitsLoss()
-    optimiser = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY, momentum=0.9)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimiser, step_size=10, gamma=0.1) #added this
-
+    
     train_loss, train_accuracy = train_one_epoch(epoch, model, train_loader, criterion, optimiser, scheduler, device=device, visualise=True)
     valid_loss, valid_accuracy = validate_model(model, valid_loader, criterion, device=device, visualise=True)
 
-    print(f"Epoch: {epoch}, Train Loss: {train_loss}, Train Accuracy: {train_accuracy}, Valid Loss: {valid_loss}, Valid Accuracy: {valid_accuracy}")
+    train_loss_data.append(train_loss)
+    train_accuracy_data.append(train_accuracy)
+    valid_loss_data.append(valid_loss)
+    valid_accuracy_data.append(valid_accuracy)
+
+    print(f"Epoch: {epoch+1} Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Valid Loss: {valid_loss:.4f}, Valid Accuracy: {valid_accuracy:.4f}")
+
+    # save the model if it is better than the current model
+    if top_valid_acc < valid_accuracy:
+        early_stop_count = 0
+        top_valid_acc = valid_accuracy
+        best_model_wts = copy.deepcopy(model.state_dict())
+        torch.save(best_model_wts, os.path.join(saving_filepath, 'gfnet_model.pt'))
+    else:
+        early_stop_count += 1
+
+    # stop the training early if there is no improvement in the last epochs
+    if (early_stop_count > EARLY_STOP_VAL):
+        print(f"No improvement in last {EARLY_STOP_VAL} epochs, stopping training")
+        break
+
+# save accuracy and loss data
+with open(os.path.join(saving_filepath, 'train_loss_data.pkl'), 'wb') as f:
+    pickle.dump(train_loss_data, f)
+
+with open(os.path.join(saving_filepath, 'train_accuracy_data.pkl'), 'wb') as f:
+    pickle.dump(train_accuracy_data, f)
+
+with open(os.path.join(saving_filepath, 'valid_loss_data.pkl'), 'wb') as f:
+    pickle.dump(valid_loss_data, f)
+
+with open(os.path.join(saving_filepath, 'valid_accuracy_data.pkl'), 'wb') as f:
+    pickle.dump(valid_accuracy_data, f)
+
+break

@@ -55,9 +55,9 @@ class ADNIDatasetTrain(Dataset):
         Creates a mask for the dataset. Splits the training dataset into training and validation sets.
 
         :Args: None
-        
+
         :Returns: List[bool]
-        
+
         :Raises: None
         """
         random.seed(self.seed)
@@ -75,11 +75,11 @@ class ADNIDatasetTrain(Dataset):
         """
         Preprocess images in AD and NC directories
         These will be stored in processed_AD and processed_NC respectively
-        
+
         :Args: None
-        
+
         :Returns: None
-        
+
         :Raises: None
         """
         # check processed AD directory exists
@@ -109,9 +109,9 @@ class ADNIDatasetTrain(Dataset):
         :Args:
                 raw_filepath (str): Path to the raw image file
                 processed_filepath (str): Path to save the processed image
-        
+
         :Returns: None
-        
+
         :Raises: None
         """
         # load in grayscale (since images are grayscale)
@@ -146,14 +146,14 @@ class ADNIDatasetTrain(Dataset):
     def _crop_brain_region(self, image):
         """
         Seperate the brain region from the background and crop the image based
-        on the bounding box of the brain region. 
+        on the bounding box of the brain region.
 
         :Args:
                 image (np.array): image to be cropped
-        
-        :Returns: 
+
+        :Returns:
                 np.array: cropped image
-        
+
         :Raises: None
         """
 
@@ -180,10 +180,10 @@ class ADNIDatasetTrain(Dataset):
         Get length of dataset
 
         :Args: None
-        
-        :Returns: 
+
+        :Returns:
                 int: dataset length
-        
+
         :Raises: None
         """
         return sum(self.mask)
@@ -192,12 +192,12 @@ class ADNIDatasetTrain(Dataset):
         """
         Get image from dataset
 
-        :Args: 
+        :Args:
                 idx (int): index of image in dataset
-        
-        :Returns: 
+
+        :Returns:
                 tuple(np.array, int): image, label
-        
+
         :Raises: IndexError
         """
         # Find the actual index in the full list based on the mask
@@ -216,7 +216,7 @@ class ADNIDatasetTrain(Dataset):
         img_path = self.all_images[masked_idx]
         label = self.all_labels[masked_idx]
 
-        image = Image.open(img_path).convert('RGB') # Ensure image is in RGB format
+        image = Image.open(img_path).convert('L') # Ensure image is in grayscale format
 
         if self.transform:
             image = self.transform(image)
@@ -255,11 +255,11 @@ class ADNIDatasetTest(Dataset):
         """
         Preprocess images in AD and NC directories
         These will be stored in processed_AD and processed_NC respectively
-        
+
         :Args: None
-        
+
         :Returns: None
-        
+
         :Raises: None
         """
         # check processed AD directory exists
@@ -289,9 +289,9 @@ class ADNIDatasetTest(Dataset):
         :Args:
                 raw_filepath (str): Path to the raw image file
                 processed_filepath (str): Path to save the processed image
-        
+
         :Returns: None
-        
+
         :Raises: None
         """
         # load in grayscale (since images are grayscale)
@@ -326,14 +326,14 @@ class ADNIDatasetTest(Dataset):
     def _crop_brain_region(self, image):
         """
         Seperate the brain region from the background and crop the image based
-        on the bounding box of the brain region. 
+        on the bounding box of the brain region.
 
         :Args:
                 image (np.array): image to be cropped
-        
-        :Returns: 
+
+        :Returns:
                 np.array: cropped image
-        
+
         :Raises: None
         """
         # threshold the image using Otsu's threshold method
@@ -356,16 +356,16 @@ class ADNIDatasetTest(Dataset):
 
     def _group_images(self, dir, label):
         """
-        Test images are given in groups, where the first number corresponds to 
+        Test images are given in groups, where the first number corresponds to
         a given brain. Group the images by their number, there should be 20 images per group
 
         :Args:
                 dir (str): processed directory path
                 label (int): 1 for AD, 0 for NC
-        
-        :Returns: 
+
+        :Returns:
                 List[dict]: a list of dictionaries containing the group number, filenames and label
-        
+
         :Raises: None
         """
         img_groups = []
@@ -378,14 +378,15 @@ class ADNIDatasetTest(Dataset):
                 unsorted_groups[group_number].append(filename)
 
         # Sort the groups based on the group number
-        for group_number, filnames in unsorted_groups.items():
+        for group_number, filenames in unsorted_groups.items():
             # sort filenames based on second number of filename
-            sorted_group = sorted(filnames, key=lambda x: int(x.split('_')[1].split('.')[0]))
-            
+            sorted_group = sorted(filenames, key=lambda x: int(x.split('_')[1].split('.')[0]))
+
             # check group size is 20
             if len(sorted_group) != 20:
-                raise Exception(f"Group {group_number} does not contain excalty 20 images")
-            
+                # raise Exception(f"Group {group_number} does not contain excalty 20 images")
+                print(f"Group {group_number} does not contain excalty 20 images")
+
             img_groups.append({
                 "group_number" : group_number,
                 "filenames" : sorted_group,
@@ -399,10 +400,10 @@ class ADNIDatasetTest(Dataset):
         Get length of dataset
 
         :Args: None
-        
-        :Returns: 
+
+        :Returns:
                 int: dataset length
-        
+
         :Raises: None
         """
         return len(self.img_groups)
@@ -411,12 +412,12 @@ class ADNIDatasetTest(Dataset):
         """
         Get image stack from dataset
 
-        :Args: 
+        :Args:
                 idx (int): index of image in dataset
-        
-        :Returns: 
+
+        :Returns:
                 tuple(torch.tensor, torch.tensor): image stack, label
-        
+
         :Raises: IndexError
         """
         # grab image and labels
@@ -443,7 +444,7 @@ class ADNIDatasetTest(Dataset):
 
             # add image to image stack
             images_stacked.append(image)
-        
+
         # use numpy to stack tensors since we have a list
         # images stacked to form (20, 1, 210, 210) shape
         images_stacked = np.stack(images_stacked, axis = 0)

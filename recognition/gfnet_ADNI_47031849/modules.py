@@ -1,10 +1,4 @@
 """
-From Task Sheet:
-"Containing the source code of the components of your model. Each component must be
-implementated as a class or a function"
-"""
-
-"""
 This code is adapted from the original implementation of GFNet
 See:
     https://arxiv.org/abs/2107.00645
@@ -30,8 +24,8 @@ class PatchEmbedding(nn.Module):
         super().__init__()
         self.image_size = to_2tuple(image_size) # (image_size, image_size) tuple
         self.patch_size = to_2tuple(patch_size) # ensures that value is a tuple
-        self.num_patches = (image_size[1] // patch_size[1]) * (image_size[0] // patch_size[0])
-        
+        self.num_patches = (self.image_size[1] // self.patch_size[1]) * (self.image_size[0] // self.patch_size[0])
+
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=self.patch_size, stride=self.patch_size)
 
     def forward(self, x):
@@ -39,8 +33,7 @@ class PatchEmbedding(nn.Module):
         B, C, H, W = x.shape
         assert H == self.image_size[0] and W == self.image_size[1], \
             f"Input image size ({H}*{W}) does not match model ({self.image_size[0]} * {self.image_size[1]})"
-        
-        # 
+
         x = self.proj(x).flatten(2).transpose(1, 2)
         return x
 
@@ -77,8 +70,8 @@ class MultiLayerPerceptron(nn.Module):
     """
     Per-token depth-wise feature transformation
 
-    MLP provides non-linearity to the global filter layer (with GELU) as well as 
-    channel interaction 
+    MLP provides non-linearity to the global filter layer (with GELU) as well as
+    channel interaction
 
     In the GFNet, the MLP consits of linear projection, activation function (GELU) and dropout layer
     """
@@ -117,10 +110,10 @@ class Block(nn.Module):
         x = x + self.drop_path(self.mlp(self.norm2(self.filter(self.norm1(x)))))
         return x
 class GFNet(nn.Module):
-    
+
     def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1, embed_dim=768, depth=12,
                  mlp_ratio=4., representation_size=None, uniform_drop=False,
-                 drop_rate=0., drop_path_rate=0., norm_layer=None, 
+                 drop_rate=0., drop_path_rate=0., norm_layer=None,
                  dropcls=0):
         """
         num_classes = 1 for binary classification
@@ -149,7 +142,7 @@ class GFNet(nn.Module):
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
 
         self.patch_embed = PatchEmbedding(
-                img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+                image_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
         num_patches = self.patch_embed.num_patches
 
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
@@ -162,16 +155,16 @@ class GFNet(nn.Module):
             print('using uniform droppath with expect rate', drop_path_rate)
             dpr = [drop_path_rate for _ in range(depth)]  # stochastic depth decay rule
         else:
-            print('using linear droppath with expect rate', drop_path_rate * 0.5)
+            # print('using linear droppath with expect rate', drop_path_rate * 0.5)
             dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
         # dpr = [drop_path_rate for _ in range(depth)]  # stochastic depth decay rule
-        
+
         self.blocks = nn.ModuleList([
             Block(
                 dim=embed_dim, mlp_ratio=mlp_ratio,
                 drop=drop_rate, drop_path=dpr[i], norm_layer=norm_layer, h=h, w=w)
             for i in range(depth)])
-        
+
         self.norm = norm_layer(embed_dim)
 
         # Representation layer

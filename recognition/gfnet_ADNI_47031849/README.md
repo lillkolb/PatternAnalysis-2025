@@ -5,10 +5,11 @@ A GFNet model was designed and trained to classify Alzheimer’s in MRI brain sc
 The model was trained on the Google Colab A100 GPU, and managed to to have an 80.00% accuracy on the test set.  
 
 ### Introduction  
-Alzheimer’s Disease is a type of dementia that affects memory, thinking and behaviour of the affected patient [1][1]. 
-It typically shrinks the brain, kills neurons and a buildup of plaque can accumulate in areas such as the hippocampus [2][2].  
+Alzheimer’s Disease is a type of dementia that affects memory, thinking and behaviour of the affected patient [^1]. 
+It typically shrinks the brain, kills neurons and a buildup of plaque can accumulate in areas such as the hippocampus [^2].  
 [![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif "Normal Brain vs Advanced Alzheimer's Visual")][2]  
 Normal Brain vs Advanced Alzheimer's Visual  
+
 The ADNI dataset consists of 21525 images in the training set (10401 AD, 11124 NC) and 9000 images in the testing dataset (4460 AD, 4546 NC). 
 6 images wihin the NC testing dataset were deleted as they were duplicates and cause issues with the testing data. These images could've been an error 
 from when data was being transferred locally.  
@@ -22,11 +23,17 @@ it can be helpful to use an image classifier to speed up the identification proc
 
 We have implemented a GFNet to tackle this image classifcation problem. 
 GFNet stands for Global Filter Networks, and it is similar to a vision transform with some key differences. 
-It replaces the self-attention layer 
+
+It makes use of a 2D Fourier Transformation to find frequency-domain features and runs an element-wise multiplication between said features and learnable global filters. 
+The multiplied result is then converting the result back to the time domain using a 2D Inverse Fourier Transform [^3]. 
+
+This mechanism is used to replace the self-attention layer found in vision tranformers. 
 
 [![GFNet Visualised](resources/GFNet_visual.gif "GFNet Visualised")][4]  
 GFNet Visualised 
 (Intro to GFNet: How does it work, layers, include GIF)
+
+This resolves the complexity that the self-attention brings to the model for larger images, and thus allows scaling for for higher level resolutions. 
 
 ### Dependencies  
 
@@ -82,6 +89,7 @@ As seen from the figures, the performance of the model peaks at around 60 epochs
 
 
 ![Confusion Matrix](resources/confusion_matrix.png "Confusion Matrix")  
+Confusion Matrix  
 
 ### Usage
 For training the model using train.py:  
@@ -99,7 +107,7 @@ options:
 
 For predicting on the test dataset using predict.py:  
 ```
-usage: predict.py [-h] [-dp TESTPATH] [-sp SAVEPATH]
+usage: predict.py [-h] [-dp TESTPATH] [-sp SAVEPATH] [-mp MODELPATH]
 
 options:
   -h, --help            show this help message and exit
@@ -107,6 +115,8 @@ options:
                         Filepath to ADNI testing dataset
   -sp SAVEPATH, --savepath SAVEPATH
                         Filepath to saved elements
+  -mp MODELPATH, --modelpath MODELPATH
+                        Filepath to saved model
 ```  
 
 ### Conclusion 
@@ -117,10 +127,10 @@ although 80% acc is high, in a medical context it may not be as ideal since it d
 (try training with patients rather than images? -> may need more data)
 
 ### References  
-[1]: https://www.alz.org/alzheimers-dementia/what-is-alzheimers  
-[2]: https://www.medicalnewstoday.com/articles/alzheimers-brain-vs-normal-brain#alzheimers-brain  
-[3]: https://arxiv.org/abs/2107.00645  
-[4]: https://github.com/raoyongming/GFNet
+[^1]: https://www.alz.org/alzheimers-dementia/what-is-alzheimers  
+[^2]: https://www.medicalnewstoday.com/articles/alzheimers-brain-vs-normal-brain#alzheimers-brain  
+[^3]: https://arxiv.org/abs/2107.00645  
+[^4]: https://github.com/raoyongming/GFNet
 
 
 dataset.py  

@@ -7,46 +7,32 @@ The model was trained on the Google Colab A100 GPU, and managed to to have an 80
 ### Introduction  
 Alzheimer’s Disease is a type of dementia that affects memory, thinking and behaviour of the affected patient[^1]. 
 It typically shrinks the brain, kills neurons and a buildup of plaque can accumulate in areas such as the hippocampus[^2].  
-![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif "Normal Brain vs Advanced Alzheimer's Visual")[^2]  
-Normal Brain vs Advanced Alzheimer's Visual  
+![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif "Normal Brain vs Advanced Alzheimer's Visual")[^2] 
+**Normal Brain vs Advanced Alzheimer's Visual**  
 
 The ADNI dataset consists of 21525 images in the training set (10401 AD, 11124 NC) and 9000 images in the testing dataset (4460 AD, 4546 NC). 
 6 images wihin the NC testing dataset were deleted as they were duplicates and cause issues with the testing data. These images could've been an error 
 from when data was being transferred locally.  
+
 ![Neurotypical Brain Image from NC training data](resources/808819_88_NC_train.jpeg "Neurotypical Brain Image from NC training data")  
-Neurotypical Brain Image from NC training data  
+**Neurotypical Brain Image from NC training data**  
+
 ![Alzheimer Affected Brain Image from AD training data](resources/218391_78_AD_train.jpeg "Alzheimer Affected Brain Image from AD training data")  
-Alzheimer Affected Brain Image from AD training data  
+**Alzheimer Affected Brain Image from AD training data**  
 
 As you can see from the images, it can be difficult and tedious to determine which brain has been affected by the disease. In situation like these, 
 it can be helpful to use an image classifier to speed up the identification process.  
 
 We have implemented a GFNet to tackle this image classifcation problem. 
 GFNet stands for Global Filter Networks, and it is similar to a vision transform with some key differences. 
-
 It makes use of a 2D Fourier Transformation to find frequency-domain features and runs an element-wise multiplication between said features and learnable global filters. 
 The multiplied result is then converting the result back to the time domain using a 2D Inverse Fourier Transform[^3]. 
-
 This mechanism is used to replace the self-attention layer found in vision tranformers. 
 
-![GFNet Visualised](resources/GFNet_visual.gif "GFNet Visualised")[^4]  
-GFNet Visualised 
-(Intro to GFNet: How does it work, layers, include GIF)
+![GFNet Visualised](resources/GFNet_visual.gif "GFNet Visualised")[^4] 
+**GFNet Visualised**  
 
 This resolves the complexity that the self-attention brings to the model for larger images, and thus allows scaling for for higher level resolutions. 
-
-### Dependencies  
-
-- Python: 3.12.12
-- Pytorch: 2.8.0  
-- TorchVision: 0.23.0
-- Numpy: 2.0.2  
-- Scikit-learn: 1.6.1 
-- Timm: 1.0.20 
-- Tqdm: 4.67.1 
-- Matplotlib: 3.10.0 
-- PIL: 11.3.0
-- cv2: 4.12.0
 
 ### Reproducing Results  
 Within the train.py file, we set a seed to all of the random elements within the code. 
@@ -68,28 +54,68 @@ def set_seed(seed: int):
 ```
 
 ### Pre-processing Data  
+#### Cropping and Resizing Data
+
+#### Transforms
+
+#### Normalisation
+
 (Cropping & resizing)
 (Define each transform, transform helps with overfitting)
 (calculating mean and STD values)
 
-### Datasets
-(ADNITrain vs ADNITest)
-(BCEWithLogitsLoss, AdamW, CosineAnnealingLR)
+### Datasets  
+#### ADNIDatasetTest Image Stacking
+There are some small difference between the designed training dataset and the testing 
+dataset. Namely, the testing dataset retrieves the data by patient rather than by image. 
+This allows us to test on a stack of images common to a single patient rather than 
+try to predict based off a single image alone. 
+
+#### Loss function, Optimizer and Scheduler  
+
+The *loss function* is used to calculate the difference between the predicted values and the 
+true values of the data set. We have opted to use Binary Cross Entropy Loss for the loss function, 
+since the task is a binary classification.  
+
+The *optimizer* is used to change the parameters of the model to minimise the loss. We chose the 
+AdamW for the optimizer due to its flexible nature and it's ability to remain stable and reduce overfitting, 
+especially in large models like transformers.  
+
+The *learning rate scheduler* is used to adjust the learning rate of the optimizer when training. 
+It helps prevent overfitting of the data and improves overall convergence. We decided to use a 
+CosineAnnealingLR for the scheduler due to it's reputation of being an effective scheduler for a 
+wide range of models.  
 
 ### Results  
-80.00% accuracy on test set
-(early stopping)
-
 We first set MAX_EPOCHS to 100 to find where the model started overfitting
 ![Finding Ideal Epoch - Accuracy](resources/acc_vs_epoch_100_seed1.png "Finding Ideal Epoch - Accuracy")  
-Finding Ideal Epoch - Accuracy  
+**Finding Ideal Epoch - Accuracy**  
+
 ![Finding Ideal Epoch - Loss](resources/loss_vs_epoch_100_seed1.png "Finding Ideal Epoch - Loss")  
-Finding Ideal Epoch - Loss  
-As seen from the figures, the performance of the model peaks at around 60 epochs.  
+**Finding Ideal Epoch - Loss**  
+
+As seen from the figures, the performance of the model peaks at around 60 epochs and then proceed to 
+start overfitting. 
+
+Following this, we adjusted the number of MAX_EPOCHS to 75 to limit redundant training loops. 
+
+![Final Model - Accuracy](resources/acc_vs_epoch_seed10.png "Final Model - Accuracy")  
+**Final Model - Accuracy**  
+
+![Final Model - Loss](resources/loss_vs_epoch_seed10.png "Final Model - Loss")  
+**Final Model - Loss**  
+
 
 
 ![Confusion Matrix](resources/confusion_matrix.png "Confusion Matrix")  
-Confusion Matrix  
+**Confusion Matrix**  
+
+![ROC Curve](resources/roc_curve.png "ROC Curve")  
+**ROC Curve**  
+
+![Precision Recall Curve](resources/precision_recall_curve.png "Precision Recall Curve")  
+**Precision Recall Curve**  
+
 
 ### Usage
 For training the model using train.py:  
@@ -125,6 +151,18 @@ although 80% acc is high, in a medical context it may not be as ideal since it d
 (look to changing mean and std)
 (experiment with other transforms)
 (try training with patients rather than images? -> may need more data)
+
+### Dependencies  
+- Python: 3.12.12
+- Pytorch: 2.8.0  
+- TorchVision: 0.23.0
+- Numpy: 2.0.2  
+- Scikit-learn: 1.6.1 
+- Timm: 1.0.20 
+- Tqdm: 4.67.1 
+- Matplotlib: 3.10.0 
+- PIL: 11.3.0
+- cv2: 4.12.0
 
 ### References  
 [^1]: https://www.alz.org/alzheimers-dementia/what-is-alzheimers  

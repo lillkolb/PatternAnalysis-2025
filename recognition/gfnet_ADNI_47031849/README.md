@@ -15,7 +15,7 @@ The model was trained on the Google Colab A100 GPU, and managed to to have an 80
 (Short intro to what Alzhiemers is: cause, symptoms, treatement (reference))  
 Alzheimer’s Disease is a type of dementia that affects memory, thinking and behaviour of the affected patient [1][1]. 
 It typically shrinks the brain, kills neurons and a buildup of plaque can accumulate in areas such as the hippocampus [2][2].  
-![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif) [2][2]  
+![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif "Normal Brain vs Advanced Alzheimer's Visual") [2][2]  
 
 
 (Intro to dataset: folder size, image size, test vs train set, how to id alzheimers?, example images)  
@@ -23,8 +23,8 @@ It typically shrinks the brain, kills neurons and a buildup of plaque can accumu
 The ADNI dataset consists of 21525 images in the training set (10401 AD, 11124 NC) and 9000 images in the testing dataset (4460 AD, 4546 NC). 
 6 images wihin the NC testing dataset were deleted as they were duplicates and cause issues with the testing data. These images could've been an error 
 from when data was being transferred locally.  
-![Neurotypical Brain Image from NC training data](resources/808819_88_NC_train.jpeg)  
-![Alzheimer Affected Brain Image from AD training data](resources/218391_78_AD_train.jpeg)  
+![Neurotypical Brain Image from NC training data](resources/808819_88_NC_train.jpeg "Neurotypical Brain Image from NC training data")  
+![Alzheimer Affected Brain Image from AD training data](resources/218391_78_AD_train.jpeg "Alzheimer Affected Brain Image from AD training data")  
 As you can see from the images, it can be difficult to determine which image has 
 
 (Intro to GFNet: what is it, how do we use to solve task?)
@@ -77,13 +77,13 @@ def set_seed(seed: int):
 (early stopping)
 
 We first set MAX_EPOCHS to 100 to find where the model started overfitting
-![Finding Ideal Epoch - Accuracy](resources/acc_vs_epoch_100_seed1.png)
-![Finding Ideal Epoch - Accuracy](resources/loss_vs_epoch_100_seed1.png)  
+![Finding Ideal Epoch - Accuracy](resources/acc_vs_epoch_100_seed1.png "Finding Ideal Epoch - Accuracy")
+![Finding Ideal Epoch - Loss](resources/loss_vs_epoch_100_seed1.png "Finding Ideal Epoch - Loss")  
 As seen from the figures, the performance of the model peaks at around 60 epochs.  
 
 
 
-![Confusion Matrix](resources/confusion_matrix.png)  
+![Confusion Matrix](resources/confusion_matrix.png "Confusion Matrix")  
 
 ### Usage
 For training the model using train.py:  

@@ -5,9 +5,9 @@ A GFNet model was designed and trained to classify Alzheimer’s in MRI brain sc
 The model was trained on the Google Colab A100 GPU, and managed to to have an 80.00% accuracy on the test set.  
 
 ### Introduction  
-Alzheimer’s Disease is a type of dementia that affects memory, thinking and behaviour of the affected patient [^1]. 
-It typically shrinks the brain, kills neurons and a buildup of plaque can accumulate in areas such as the hippocampus [^2].  
-[![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif "Normal Brain vs Advanced Alzheimer's Visual")][2]  
+Alzheimer’s Disease is a type of dementia that affects memory, thinking and behaviour of the affected patient[^1]. 
+It typically shrinks the brain, kills neurons and a buildup of plaque can accumulate in areas such as the hippocampus[^2].  
+![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif "Normal Brain vs Advanced Alzheimer's Visual")[^2]  
 Normal Brain vs Advanced Alzheimer's Visual  
 
 The ADNI dataset consists of 21525 images in the training set (10401 AD, 11124 NC) and 9000 images in the testing dataset (4460 AD, 4546 NC). 
@@ -25,11 +25,11 @@ We have implemented a GFNet to tackle this image classifcation problem.
 GFNet stands for Global Filter Networks, and it is similar to a vision transform with some key differences. 
 
 It makes use of a 2D Fourier Transformation to find frequency-domain features and runs an element-wise multiplication between said features and learnable global filters. 
-The multiplied result is then converting the result back to the time domain using a 2D Inverse Fourier Transform [^3]. 
+The multiplied result is then converting the result back to the time domain using a 2D Inverse Fourier Transform[^3]. 
 
 This mechanism is used to replace the self-attention layer found in vision tranformers. 
 
-[![GFNet Visualised](resources/GFNet_visual.gif "GFNet Visualised")][4]  
+![GFNet Visualised](resources/GFNet_visual.gif "GFNet Visualised")[^4]  
 GFNet Visualised 
 (Intro to GFNet: How does it work, layers, include GIF)
 

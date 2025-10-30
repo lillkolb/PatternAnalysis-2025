@@ -1,34 +1,31 @@
 # COMP3710 Pattern Recognition and Analysis  
 ## Alzheimer’s Disease Classifier using ADNI Brain Data  
 ### Model Chosen: GFNet  
-
-The readme file should contain a title, a description of the algorithm and the problem that it solves (approximately a paragraph), how it works in a paragraph and a figure/visualisation.
-It should also list any dependencies required, including versions and address reproduciblility of results, if applicable
-provide example inputs, outputs and plots of your algorithm
-Describe any specific pre-processing you have used with references if any. Justify your training, validation and testing splits of the data.
-Include a conclusion, future works,  - many people lost marks due to this
-
 A GFNet model was designed and trained to classify Alzheimer’s in MRI brain scan images, with training and testing data provided by the [ADNI dataset](https://adni.loni.usc.edu/). 
 The model was trained on the Google Colab A100 GPU, and managed to to have an 80.00% accuracy on the test set.  
 
 ### Introduction  
-(Short intro to what Alzhiemers is: cause, symptoms, treatement (reference))  
 Alzheimer’s Disease is a type of dementia that affects memory, thinking and behaviour of the affected patient [1][1]. 
 It typically shrinks the brain, kills neurons and a buildup of plaque can accumulate in areas such as the hippocampus [2][2].  
-![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif "Normal Brain vs Advanced Alzheimer's Visual") [2][2]  
-
-
-(Intro to dataset: folder size, image size, test vs train set, how to id alzheimers?, example images)  
-
+[![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif "Normal Brain vs Advanced Alzheimer's Visual")][2]  
+Normal Brain vs Advanced Alzheimer's Visual  
 The ADNI dataset consists of 21525 images in the training set (10401 AD, 11124 NC) and 9000 images in the testing dataset (4460 AD, 4546 NC). 
 6 images wihin the NC testing dataset were deleted as they were duplicates and cause issues with the testing data. These images could've been an error 
 from when data was being transferred locally.  
 ![Neurotypical Brain Image from NC training data](resources/808819_88_NC_train.jpeg "Neurotypical Brain Image from NC training data")  
+Neurotypical Brain Image from NC training data  
 ![Alzheimer Affected Brain Image from AD training data](resources/218391_78_AD_train.jpeg "Alzheimer Affected Brain Image from AD training data")  
-As you can see from the images, it can be difficult to determine which image has 
+Alzheimer Affected Brain Image from AD training data  
 
-(Intro to GFNet: what is it, how do we use to solve task?)
+As you can see from the images, it can be difficult and tedious to determine which brain has been affected by the disease. In situation like these, 
+it can be helpful to use an image classifier to speed up the identification process.  
 
+We have implemented a GFNet to tackle this image classifcation problem. 
+GFNet stands for Global Filter Networks, and it is similar to a vision transform with some key differences. 
+It replaces the self-attention layer 
+
+[![GFNet Visualised](resources/GFNet_visual.gif "GFNet Visualised")][4]  
+GFNet Visualised 
 (Intro to GFNet: How does it work, layers, include GIF)
 
 ### Dependencies  
@@ -77,10 +74,11 @@ def set_seed(seed: int):
 (early stopping)
 
 We first set MAX_EPOCHS to 100 to find where the model started overfitting
-![Finding Ideal Epoch - Accuracy](resources/acc_vs_epoch_100_seed1.png "Finding Ideal Epoch - Accuracy")
+![Finding Ideal Epoch - Accuracy](resources/acc_vs_epoch_100_seed1.png "Finding Ideal Epoch - Accuracy")  
+Finding Ideal Epoch - Accuracy  
 ![Finding Ideal Epoch - Loss](resources/loss_vs_epoch_100_seed1.png "Finding Ideal Epoch - Loss")  
+Finding Ideal Epoch - Loss  
 As seen from the figures, the performance of the model peaks at around 60 epochs.  
-
 
 
 ![Confusion Matrix](resources/confusion_matrix.png "Confusion Matrix")  
@@ -112,16 +110,18 @@ options:
 ```  
 
 ### Conclusion 
-
-
-
-### References  
-[1]: <https://www.alz.org/alzheimers-dementia/what-is-alzheimers>  
-[2]: <https://www.medicalnewstoday.com/articles/alzheimers-brain-vs-normal-brain#alzheimers-brain>  
-
+good success, change threshold in testing to reduce false negative rate, since it is medical we do not want to miss possible diagnosis
+although 80% acc is high, in a medical context it may not be as ideal since it directly relates to the health of people. 
 (look to changing mean and std)
 (experiment with other transforms)
 (try training with patients rather than images? -> may need more data)
+
+### References  
+[1]: https://www.alz.org/alzheimers-dementia/what-is-alzheimers  
+[2]: https://www.medicalnewstoday.com/articles/alzheimers-brain-vs-normal-brain#alzheimers-brain  
+[3]: https://arxiv.org/abs/2107.00645  
+[4]: https://github.com/raoyongming/GFNet
+
 
 dataset.py  
 Resizing image, Otsu's threshold method, resize dimension (210), Lancoz interpolation  
@@ -129,3 +129,9 @@ Resizing image, Otsu's threshold method, resize dimension (210), Lancoz interpol
 train.py  
 epochs, early stopping, BCEWithLogitsLoss, AdamW, CosineAnnealingLR, 
 scheduler
+
+The readme file should contain a title, a description of the algorithm and the problem that it solves (approximately a paragraph), how it works in a paragraph and a figure/visualisation.
+It should also list any dependencies required, including versions and address reproduciblility of results, if applicable
+provide example inputs, outputs and plots of your algorithm
+Describe any specific pre-processing you have used with references if any. Justify your training, validation and testing splits of the data.
+Include a conclusion, future works,  - many people lost marks due to this

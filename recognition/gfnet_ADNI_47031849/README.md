@@ -32,6 +32,13 @@ This mechanism is used to replace the self-attention layer found in vision tranf
 
 This resolves the complexity that the self-attention brings to the model for larger images, and thus allows scaling for for higher level resolutions. 
 
+#### GFNet Layers  
+Patch Embedding
+Global Filter
+MLP
+global avg pooling
+
+
 ### Reproducing Results  
 Within the train.py file, we set a seed to all of the random elements within the code. 
 This ensures that we can reproduce the same result/model when re-running the code or when running 
@@ -52,15 +59,37 @@ def set_seed(seed: int):
 ```
 
 ### Pre-processing Data  
-#### Cropping and Resizing Data
+#### Cropping and Resizing Data  
+Throughout the dataset, we could see slight variations in the positioning of the 
+brain (see above) between images, as well as the brain sizing. Additionally, 
+the brain scan images typically included a lot of unneccessary background pixels. 
+In order to remove the unneccesary pixels and to keep a consistent brain size, 
+we crop and resize the dataset so that it maximises the brain region. This was done 
+by extracting the rectangular region containing the non-background pixels and adding 
+padding to the borders to fit a 210x210 image. These dimensions were chosen as there 
+was no cropping dimension that exceeded 210 within the dataset. 
 
-#### Transforms
+#### Transforms  
+Transforms are used to provide variability in the training data, 
+
+RandomResizedCrop
+RandomRotation
+RandomAffine
+RandomApply
+RandomErasing
 
 #### Normalisation
+Both testing and training data need to be normalised in order to 
 
-(Cropping & resizing)
-(Define each transform, transform helps with overfitting)
-(calculating mean and STD values)
+In order to find appropriate mean and standard deviation values for the dataset, 
+we iterated through all of the images in the training data and calculated the average 
+mean and standard deviation of the training dataset. These were found to be 
+``MEAN = 0.11486841564676334`` and ``STD = 0.21826585544938487`` respectively, and 
+were used to normlise the data. 
+
+| ![Unprocessed Image](resources/808819_88_NC_train.jpeg "Unprocessed Image") | ![Pre-processed Image](resources/808819_88_NC_processed_train.jpeg "Pre-processed Image") |
+| ----- | ----- |
+| **Unprocessed Image** | **Pre-processed Image** | 
 
 ### Datasets  
 #### ADNIDatasetTest Image Stacking
@@ -93,10 +122,7 @@ We first set MAX_EPOCHS to 100 to find where the model started overfitting
 | **Finding Ideal Epoch - Accuracy** | **Finding Ideal Epoch - Loss** |
 
 As seen from the figures, the performance of the model peaks at around 60 epochs and then proceed to 
-start overfitting. 
-
-Following this, we adjusted the number of MAX_EPOCHS to 75 to limit redundant training loops. 
-
+start overfitting. Following this, we adjusted the number of MAX_EPOCHS to 75 to limit redundant training loops. 
 
 | ![Final Model - Accuracy](resources/acc_vs_epoch_seed10.png "Final Model - Accuracy") | ![Final Model - Loss](resources/loss_vs_epoch_seed10.png "Final Model - Loss") |
 | ----- | ----- |
@@ -166,10 +192,6 @@ although 80% acc is high, in a medical context it may not be as ideal since it d
 
 dataset.py  
 Resizing image, Otsu's threshold method, resize dimension (210), Lancoz interpolation  
-
-train.py  
-epochs, early stopping, BCEWithLogitsLoss, AdamW, CosineAnnealingLR, 
-scheduler
 
 The readme file should contain a title, a description of the algorithm and the problem that it solves (approximately a paragraph), how it works in a paragraph and a figure/visualisation.
 It should also list any dependencies required, including versions and address reproduciblility of results, if applicable

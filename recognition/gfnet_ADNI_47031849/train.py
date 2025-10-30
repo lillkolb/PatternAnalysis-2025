@@ -10,14 +10,19 @@ import pickle
 import os
 from tqdm import tqdm
 from functools import partial
+import argparse
 
 from dataset import ADNIDatasetTrain, ADNIDatasetTest
 from modules import GFNet
 from utils import get_transforms
 
-MEAN = 0.11486841564676334
-STD = 0.21826585544938487
+parser = argparse.ArgumentParser()
+parser.add_argument("-dp", "--trainpath", default="./drive/MyDrive/Colab_Notebooks/AD_NC/train", help="Filepath to ADNI training dataset")
+parser.add_argument("-sp", "--savepath", default="./drive/MyDrive/Colab_Notebooks/Final_proj_stored", help="Filepath to saved elements")
+parser.add_argument("-s", "--seed", default=10, type=int, help="Seed for reproducibility")
+args = parser.parse_args()
 
+# Constants ==============
 MAX_EPOCHS = 75
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 5e-4
@@ -25,10 +30,9 @@ EARLY_STOP_VAL = 12
 
 # Params ==========
 disable_tqdm = False
-test_seed = 10
-train_path = './drive/MyDrive/Colab_Notebooks/AD_NC/train'
-test_path = './drive/MyDrive/Colab_Notebooks/AD_NC/test'
-saving_filepath = './drive/MyDrive/Colab_Notebooks/Final_proj_stored'
+test_seed = args.seed
+train_path = args.trainpath
+saving_filepath = args.savepath
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -37,13 +41,13 @@ def set_seed(seed: int):
     """
     Sets the seed of the random elements of the code in order to maintain consistency between trainings
     """
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed) # Use this for CUDA
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(seed)                     # sets the seed for RNG on device
+    torch.cuda.manual_seed(seed)                # sets the seed for current GPU
+    torch.cuda.manual_seed_all(seed)            # sets the seed for all GPUs
+    np.random.seed(seed)                        # sets the seed for Numpy library
+    random.seed(seed)                           # sets the seed for Random library
+    torch.backends.cudnn.deterministic = True   # sets cuDNN to only use deterministic convolution
+    torch.backends.cudnn.benchmark = False      # sets cuDNN to not perform benchmarking
 
 # https://docs.pytorch.org/tutorials/beginner/introyt/trainingyt.html
 # train 1 epoch function
@@ -61,8 +65,6 @@ def train_one_epoch(epoch, model, train_loader, criterion, optimizer, scheduler,
         # send the batch to the device
         images = images.to(device)
         labels = labels.float().to(device)
-
-        # optimizer.zero_grad()
 
         outputs = model(images)             # 1. forward pass
         outputs = outputs.squeeze(1)        # squeeze outputs to match [64] shape of labels
@@ -120,7 +122,6 @@ def main():
 
     train_dataset = ADNIDatasetTrain(train_path, valid = False, transform=train_transforms, tqdm_disable=disable_tqdm)
     valid_dataset = ADNIDatasetTrain(train_path, valid = True, transform=train_transforms, tqdm_disable=disable_tqdm)
-    test_dataset = ADNIDatasetTest(test_path, transform=test_transforms, tqdm_disable=disable_tqdm)
 
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=6)
     valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False, num_workers=6)

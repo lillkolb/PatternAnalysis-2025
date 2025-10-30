@@ -4,12 +4,19 @@ from tqdm import tqdm
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from functools import partial
+import argparse
 
 from dataset import ADNIDatasetTrain, ADNIDatasetTest
 from modules import GFNet
 from utils import analyse_data, get_transforms
 
-test_path = './drive/MyDrive/Colab_Notebooks/AD_NC/test'
+parser = argparse.ArgumentParser()
+parser.add_argument("-dp", "--testpath", default="./drive/MyDrive/Colab_Notebooks/AD_NC/test", help="Filepath to ADNI testing dataset")
+parser.add_argument("-sp", "--savepath", default="./drive/MyDrive/Colab_Notebooks/Final_proj_stored", help="Filepath to saved elements")
+args = parser.parse_args()
+
+test_path = args.testpath
+saving_filepath = args.savepath
 
 def test_model(model, test_dataset, device):
     model.eval()
@@ -54,7 +61,7 @@ def main():
 
     actual_values, predictions_list = test_model(model, test_dataset, device)
 
-    analyse_data(actual_values, predictions_list)
+    analyse_data(actual_values, predictions_list, saving_filepath)
 
 if __name__ == "__main__":
     main()

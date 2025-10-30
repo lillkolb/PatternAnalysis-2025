@@ -12,7 +12,7 @@ from torchvision import transforms
 MEAN = 0.11486841564676334
 STD = 0.21826585544938487
 
-saving_filepath = './drive/MyDrive/Colab_Notebooks/Final_proj_stored'
+# saving_filepath = './drive/MyDrive/Colab_Notebooks/Final_proj_stored'
 
 # https://apxml.com/courses/pytorch-for-tensorflow-developers/chapter-3-pytorch-data-loading-for-tf-users/data-augmentation-pytorch-torchvision
 # apply geometric transforms before colour
@@ -34,7 +34,7 @@ def get_transforms(train):
         ])
     return data_transforms
 
-def plot_data():
+def plot_data(saving_filepath):
     # load accuracy and loss data
     with open(os.path.join(saving_filepath, 'train_loss_data.pkl'), 'rb') as f:
         tld_load = pickle.load(f)
@@ -69,7 +69,7 @@ def plot_data():
     plt.grid()
     plt.show()
 
-def analyse_data(actual_values, predictions_list):
+def analyse_data(actual_values, predictions_list, saving_filepath):
     predictions_list = np.array(predictions_list)
     actual_values = np.array(actual_values)
 

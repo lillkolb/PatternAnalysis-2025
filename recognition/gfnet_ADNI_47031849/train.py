@@ -16,6 +16,7 @@ from dataset import ADNIDatasetTrain, ADNIDatasetTest
 from modules import GFNet
 from utils import get_transforms
 
+# argument parser for users to set their own seed and filepaths
 parser = argparse.ArgumentParser()
 parser.add_argument("-dp", "--trainpath", default="./drive/MyDrive/Colab_Notebooks/AD_NC/train", help="Filepath to ADNI training dataset")
 parser.add_argument("-sp", "--savepath", default="./drive/MyDrive/Colab_Notebooks/Final_proj_stored", help="Filepath to saved elements")
@@ -34,12 +35,14 @@ test_seed = args.seed
 train_path = args.trainpath
 saving_filepath = args.savepath
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
-
 def set_seed(seed: int):
     """
     Sets the seed of the random elements of the code in order to maintain consistency between trainings
+
+    :Args:
+                seed (int): seed value used
+    :Returns:
+                None
     """
     torch.manual_seed(seed)                     # sets the seed for RNG on device
     torch.cuda.manual_seed(seed)                # sets the seed for current GPU
@@ -49,11 +52,21 @@ def set_seed(seed: int):
     torch.backends.cudnn.deterministic = True   # sets cuDNN to only use deterministic convolution
     torch.backends.cudnn.benchmark = False      # sets cuDNN to not perform benchmarking
 
-# https://docs.pytorch.org/tutorials/beginner/introyt/trainingyt.html
-# train 1 epoch function
 def train_one_epoch(epoch, model, train_loader, criterion, optimizer, scheduler, device="cuda", visualise=False):
     """
-    
+    Run one epoch of training
+
+    :Args:
+                epoch (int): current epoch of training
+                model (GFNet): model we are training
+                train_loader (Dataloader): dataloader containing training data set
+                criterion:
+                optimiser: 
+                scheduler: 
+                device (str): device the images and labels are loaded to (CPU/GPU)
+                visualise (bool): toggles visualisation of iterative progress
+    :Returns:
+                tupel(float, float): avg_loss, train_accuracy
     """
     model.train()
     total_train_loss = 0
@@ -82,12 +95,24 @@ def train_one_epoch(epoch, model, train_loader, criterion, optimizer, scheduler,
     scheduler.step()                        # 6. scheduler
 
     avg_loss = total_train_loss / len(train_loader)     # average loss throughout epoch
-    train_accuracy = pred_correct / batch_total               # model accuracy of epoch
+    train_accuracy = pred_correct / batch_total         # model accuracy of epoch
 
     return avg_loss, train_accuracy
 
 # evaluate model using validation set
 def validate_model(model, valid_loader, criterion, device="cuda", visualise=False):
+    """
+    Evaluates the model using validation set
+
+    :Args:
+                model (GFNet): model we are training
+                valid_loader (Dataloader): dataloader containing validation data set
+                criterion:
+                device (str): device the images and labels are loaded to (CPU/GPU)
+                visualise (bool): toggles visualisation of iterative progress
+    :Returns:
+                tupel(float, float): avg_loss, valid_accuracy
+    """
     model.eval()
     total_valid_loss = 0
     pred_correct = 0
@@ -110,22 +135,30 @@ def validate_model(model, valid_loader, criterion, device="cuda", visualise=Fals
                                             # add the total correct predictions in current batch
 
     avg_loss = total_valid_loss / len(valid_loader)     # average loss
-    valid_accuracy = pred_correct / batch_total               # model accuracy
+    valid_accuracy = pred_correct / batch_total         # model accuracy
 
     return avg_loss, valid_accuracy
 
 def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
+
+    # set seed
     set_seed(test_seed)
 
+    # get transforms for datasets
     train_transforms = get_transforms(True)
     test_transforms = get_transforms(False)
 
-    train_dataset = ADNIDatasetTrain(train_path, valid = False, transform=train_transforms, tqdm_disable=disable_tqdm)
-    valid_dataset = ADNIDatasetTrain(train_path, valid = True, transform=train_transforms, tqdm_disable=disable_tqdm)
+    # create dataset instances for training and validating data
+    train_dataset = ADNIDatasetTrain(train_path, valid = False, transform=train_transforms, tqdm_disable=disable_tqdm, seed=test_seed)
+    valid_dataset = ADNIDatasetTrain(train_path, valid = True, transform=train_transforms, tqdm_disable=disable_tqdm, seed=test_seed)
 
+    # load dataset into dataloader
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=6)
     valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False, num_workers=6)
-
+    
+    # create a GFNet model instance
     model = GFNet(
         img_size=210, 
         patch_size=14, 
@@ -141,18 +174,23 @@ def main():
     optimiser = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimiser, T_max=20, eta_min=1e-6)
 
+    # Initialise data storing lists
     train_loss_data = []
     train_accuracy_data = []
     valid_loss_data = []
     valid_accuracy_data = []
+
+    # Initialise variable for training
     top_valid_acc = 0
     early_stop_count = 0
 
+    # run training loop
     for epoch in range(MAX_EPOCHS):
-        
+        # train and evaluate model
         train_loss, train_accuracy = train_one_epoch(epoch, model, train_loader, criterion, optimiser, scheduler, device=device, visualise=True)
         valid_loss, valid_accuracy = validate_model(model, valid_loader, criterion, device=device, visualise=True)
 
+        # append loss and accuracy data to data storing lists
         train_loss_data.append(train_loss)
         train_accuracy_data.append(train_accuracy)
         valid_loss_data.append(valid_loss)
@@ -165,7 +203,7 @@ def main():
             early_stop_count = 0
             top_valid_acc = valid_accuracy
             best_model_wts = copy.deepcopy(model.state_dict())
-            torch.save(best_model_wts, os.path.join(saving_filepath, 'gfnet_model_test.pt'))
+            torch.save(best_model_wts, os.path.join(saving_filepath, 'gfnet_model.pt'))
         else:
             early_stop_count += 1
 

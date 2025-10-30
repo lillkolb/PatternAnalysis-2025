@@ -27,7 +27,6 @@ class ADNIDatasetTrain(Dataset):
                 seed (int): Seed for consistentency in random number generators
                 split_ratio (float): how much of the training dataset we split to train on
                 tqdm_disable (bool): Whether to disable the tqdm progress bar
-
         """
         self.img_dir = img_dir
         self.ad = img_dir + '/AD'
@@ -417,8 +416,6 @@ class ADNIDatasetTest(Dataset):
 
         :Returns:
                 tuple(torch.tensor, torch.tensor): image stack, label
-
-        :Raises: IndexError
         """
         # grab image and labels
         group = self.img_groups[idx]

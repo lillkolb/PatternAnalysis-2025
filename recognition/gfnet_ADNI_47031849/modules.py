@@ -39,7 +39,9 @@ class PatchEmbedding(nn.Module):
 
 class GlobalFilter(nn.Module):
     """
-    global mixing in the spatial dimension
+    Global mixing in the spatial dimension
+
+    NOTE: This layer replaces the self-attention layer in ViTs
     """
     def __init__(self, dim, h=14, w=8):
         super().__init__()
@@ -57,9 +59,14 @@ class GlobalFilter(nn.Module):
         x = x.view(B, H, W, C)
         x = x.to(torch.float32)
 
+        # apply 2D Fourier transform for frequency domain
         x = torch.fft.rfft2(x, dim=(1, 2), norm='ortho')
+
+        # apply multiplication between learnable global features and freq domain features
         weight = torch.view_as_complex(self.cmplx_weight)
         x = x * weight
+
+        # apply 2D Inverse Fourier transform for time domain
         x = torch.fft.irfft2(x, s=(H, W), dim=(1, 2), norm='ortho')
 
         x = x.reshape(B, N, C)
@@ -96,7 +103,6 @@ class Block(nn.Module):
     """
     GFNet Block, connects Global Filter layer and MLP layer
     """
-
     def __init__(self, dim, mlp_ratio=4., drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, h=14, w=8):
         super().__init__()
         self.norm1 = norm_layer(dim)
@@ -109,6 +115,7 @@ class Block(nn.Module):
     def forward(self, x):
         x = x + self.drop_path(self.mlp(self.norm2(self.filter(self.norm1(x)))))
         return x
+
 class GFNet(nn.Module):
 
     def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1, embed_dim=768, depth=12,

@@ -8,16 +8,30 @@ provide example inputs, outputs and plots of your algorithm
 Describe any specific pre-processing you have used with references if any. Justify your training, validation and testing splits of the data.
 Include a conclusion, future works,  - many people lost marks due to this
 
-(Include a small summary of the task and the result, include GPU type)
+A GFNet model was designed and trained to classify Alzheimer’s in MRI brain scan images, with training and testing data provided by the [ADNI dataset](https://adni.loni.usc.edu/). 
+The model was trained on the Google Colab A100 GPU, and managed to to have an 80.00% accuracy on the test set.  
 
-#### Introduction  
+### Introduction  
 (Short intro to what Alzhiemers is: cause, symptoms, treatement (reference))  
+Alzheimer’s Disease is a type of dementia that affects memory, thinking and behaviour of the affected patient [1][1]. 
+It typically shrinks the brain, kills neurons and a buildup of plaque can accumulate in areas such as the hippocampus [2][2].  
+![Normal Brain vs Advanced Alzheimer's Visual](resources/alzheimers_vs_typical_drawing.avif) [2][2]  
+
+
 (Intro to dataset: folder size, image size, test vs train set, how to id alzheimers?, example images)  
+
+The ADNI dataset consists of 21525 images in the training set (10401 AD, 11124 NC) and 9000 images in the testing dataset (4460 AD, 4546 NC). 
+6 images wihin the NC testing dataset were deleted as they were duplicates and cause issues with the testing data. These images could've been an error 
+from when data was being transferred locally.  
+![Neurotypical Brain Image from NC training data](resources/808819_88_NC_train.jpeg)  
+![Alzheimer Affected Brain Image from AD training data](resources/218391_78_AD_train.jpeg)  
+As you can see from the images, it can be difficult to determine which image has 
+
 (Intro to GFNet: what is it, how do we use to solve task?)
 
 (Intro to GFNet: How does it work, layers, include GIF)
 
-#### Dependencies  
+### Dependencies  
 
 - Python: 3.12.12
 - Pytorch: 2.8.0  
@@ -30,9 +44,9 @@ Include a conclusion, future works,  - many people lost marks due to this
 - PIL: 11.3.0
 - cv2: 4.12.0
 
-#### Reproducing Results  
+### Reproducing Results  
 Within the train.py file, we set a seed to all of the random elements within the code. 
-This ensures that we can reproduce the same result when re-running the code or when running 
+This ensures that we can reproduce the same result/model when re-running the code or when running 
 on a different machine. 
   
 ```
@@ -49,25 +63,65 @@ def set_seed(seed: int):
     torch.backends.cudnn.benchmark = False      # sets cuDNN to not perform benchmarking
 ```
 
-#### Pre-processing Data  
-(Cropping & resizing) (Transforms here?)
-
-#### Datasets
-(ADNITrain vs ADNITest)
-(BCEWithLogitsLoss, AdamW, CosineAnnealingLR)
-
-#### Transforms
+### Pre-processing Data  
+(Cropping & resizing)
 (Define each transform, transform helps with overfitting)
 (calculating mean and STD values)
 
+### Datasets
+(ADNITrain vs ADNITest)
+(BCEWithLogitsLoss, AdamW, CosineAnnealingLR)
 
-#### Results  
+### Results  
+80.00% accuracy on test set
+(early stopping)
+
+We first set MAX_EPOCHS to 100 to find where the model started overfitting
+![Finding Ideal Epoch - Accuracy](resources/acc_vs_epoch_100_seed1.png)
+![Finding Ideal Epoch - Accuracy](resources/loss_vs_epoch_100_seed1.png)  
+As seen from the figures, the performance of the model peaks at around 60 epochs.  
 
 
-#### Usage
+
+![Confusion Matrix](resources/confusion_matrix.png)  
+
+### Usage
+For training the model using train.py:  
+```
+usage: train.py [-h] [-dp TRAINPATH] [-sp SAVEPATH] [-s SEED]
+
+options:
+  -h, --help            show this help message and exit
+  -dp TRAINPATH, --trainpath TRAINPATH
+                        Filepath to ADNI training dataset
+  -sp SAVEPATH, --savepath SAVEPATH
+                        Filepath to saved elements
+  -s SEED, --seed SEED  Seed for reproducibility
+```  
+
+For predicting on the test dataset using predict.py:  
+```
+usage: predict.py [-h] [-dp TESTPATH] [-sp SAVEPATH]
+
+options:
+  -h, --help            show this help message and exit
+  -dp TESTPATH, --testpath TESTPATH
+                        Filepath to ADNI testing dataset
+  -sp SAVEPATH, --savepath SAVEPATH
+                        Filepath to saved elements
+```  
+
+### Conclusion 
 
 
-#### Conclusion 
+
+### References  
+[1]: <https://www.alz.org/alzheimers-dementia/what-is-alzheimers>  
+[2]: <https://www.medicalnewstoday.com/articles/alzheimers-brain-vs-normal-brain#alzheimers-brain>  
+
+(look to changing mean and std)
+(experiment with other transforms)
+(try training with patients rather than images? -> may need more data)
 
 dataset.py  
 Resizing image, Otsu's threshold method, resize dimension (210), Lancoz interpolation  

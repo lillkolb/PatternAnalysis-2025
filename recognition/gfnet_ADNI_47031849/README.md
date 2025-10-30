@@ -14,11 +14,9 @@ The ADNI dataset consists of 21525 images in the training set (10401 AD, 11124 N
 6 images wihin the NC testing dataset were deleted as they were duplicates and cause issues with the testing data. These images could've been an error 
 from when data was being transferred locally.  
 
-![Neurotypical Brain Image from NC training data](resources/808819_88_NC_train.jpeg "Neurotypical Brain Image from NC training data")  
-**Neurotypical Brain Image from NC training data**  
-
-![Alzheimer Affected Brain Image from AD training data](resources/218391_78_AD_train.jpeg "Alzheimer Affected Brain Image from AD training data")  
-**Alzheimer Affected Brain Image from AD training data**  
+| ![Neurotypical Brain Image from NC training data](resources/808819_88_NC_train.jpeg "Neurotypical Brain Image from NC training data") | ![Alzheimer Affected Brain Image from AD training data](resources/218391_78_AD_train.jpeg "Alzheimer Affected Brain Image from AD training data") |
+| ----- | ----- |
+| **Neurotypical Brain Image from NC training data** | **Alzheimer Affected Brain Image from AD training data** | 
 
 As you can see from the images, it can be difficult and tedious to determine which brain has been affected by the disease. In situation like these, 
 it can be helpful to use an image classifier to speed up the identification process.  
@@ -88,34 +86,29 @@ wide range of models.
 
 ### Results  
 We first set MAX_EPOCHS to 100 to find where the model started overfitting
-![Finding Ideal Epoch - Accuracy](resources/acc_vs_epoch_100_seed1.png "Finding Ideal Epoch - Accuracy")  
-**Finding Ideal Epoch - Accuracy**  
 
-![Finding Ideal Epoch - Loss](resources/loss_vs_epoch_100_seed1.png "Finding Ideal Epoch - Loss")  
-**Finding Ideal Epoch - Loss**  
+
+| ![Finding Ideal Epoch - Accuracy](resources/acc_vs_epoch_100_seed1.png "Finding Ideal Epoch - Accuracy") | ![Finding Ideal Epoch - Loss](resources/loss_vs_epoch_100_seed1.png "Finding Ideal Epoch - Loss") |
+| ----- | ----- | 
+| **Finding Ideal Epoch - Accuracy** | **Finding Ideal Epoch - Loss** |
 
 As seen from the figures, the performance of the model peaks at around 60 epochs and then proceed to 
 start overfitting. 
 
 Following this, we adjusted the number of MAX_EPOCHS to 75 to limit redundant training loops. 
 
-![Final Model - Accuracy](resources/acc_vs_epoch_seed10.png "Final Model - Accuracy")  
-**Final Model - Accuracy**  
 
-![Final Model - Loss](resources/loss_vs_epoch_seed10.png "Final Model - Loss")  
-**Final Model - Loss**  
-
+| ![Final Model - Accuracy](resources/acc_vs_epoch_seed10.png "Final Model - Accuracy") | ![Final Model - Loss](resources/loss_vs_epoch_seed10.png "Final Model - Loss") |
+| ----- | ----- |
+| **Final Model - Accuracy** | **Final Model - Loss**  
 
 
 ![Confusion Matrix](resources/confusion_matrix.png "Confusion Matrix")  
-**Confusion Matrix**  
+**Confusion Matrix** 
 
-![ROC Curve](resources/roc_curve.png "ROC Curve")  
-**ROC Curve**  
-
-![Precision Recall Curve](resources/precision_recall_curve.png "Precision Recall Curve")  
-**Precision Recall Curve**  
-
+| ![ROC Curve](resources/roc_curve.png "ROC Curve") | ![Precision Recall Curve](resources/precision_recall_curve.png "Precision Recall Curve") |
+| ----- | ----- |
+| **ROC Curve** | **Precision Recall Curve** |
 
 ### Usage
 For training the model using train.py:  

@@ -170,7 +170,7 @@ def main():
         norm_layer=partial(nn.LayerNorm, eps=1e-6)
     ).to(device)
 
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCEWithLogitsLoss() # loss function
     optimiser = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimiser, T_max=20, eta_min=1e-6)
 

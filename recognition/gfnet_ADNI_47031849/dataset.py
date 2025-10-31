@@ -1,7 +1,3 @@
-"""
-From Task Sheet:
-"Containing the data loader for loading and preprocessing your data"
-"""
 import torch
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image

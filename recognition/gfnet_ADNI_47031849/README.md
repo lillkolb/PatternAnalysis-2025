@@ -81,7 +81,8 @@ Transforms applied to dataset:
 **RandomErasing**: Randomly selects a rectangle region in a torch.Tensor image and erases its pixels[^8]  
 
 #### Normalisation
-Both testing and training data need to be normalised in order to 
+Both testing and training data need to be normalised in order to scale the images 
+to a common range. 
 
 In order to find appropriate mean and standard deviation values for the dataset, 
 we iterated through all of the images in the training data and calculated the average 
